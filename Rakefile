@@ -30,7 +30,8 @@ task :update do
 
   def move_files
     puts "Installating assets files ..."
-    `mv #{working_dir}/js/perfect-scrollbar.jquery.js vendor/assets/javascripts`
+    `mv #{working_dir}/js/perfect-scrollbar.jquery.js \
+        vendor/assets/javascripts/perfect-scrollbar.js`
     `mv #{working_dir}/css/perfect-scrollbar.css vendor/assets/stylesheets`
   end
 
