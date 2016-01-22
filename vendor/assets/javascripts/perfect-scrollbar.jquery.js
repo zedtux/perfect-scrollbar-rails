@@ -29,7 +29,7 @@ function mountJQuery(jQuery) {
         }
       }
 
-      return $(this);
+      return jQuery(this);
     });
   };
 }
