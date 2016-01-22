@@ -1,3 +1,4 @@
+/* perfect-scrollbar v0.6.2 */
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /* Copyright (c) 2015 Hyunje Alex Jun and other contributors
  * Licensed under the MIT License
@@ -166,7 +167,9 @@ exports.remove = function (element) {
   if (typeof element.remove !== 'undefined') {
     element.remove();
   } else {
-    element.parentNode.removeChild(element);
+    if (element.parentNode) {
+      element.parentNode.removeChild(element);
+    }
   }
 };
 
@@ -758,6 +761,27 @@ function bindMouseWheelHandler(element, i) {
     return [deltaX, deltaY];
   }
 
+  function shouldBeConsumedByTextarea(deltaX, deltaY) {
+    var hoveredTextarea = element.querySelector('textarea:hover');
+    if (hoveredTextarea) {
+      var maxScrollTop = hoveredTextarea.scrollHeight - hoveredTextarea.clientHeight;
+      if (maxScrollTop > 0) {
+        if (!(hoveredTextarea.scrollTop === 0 && deltaY > 0) &&
+            !(hoveredTextarea.scrollTop === maxScrollTop && deltaY < 0)) {
+          return true;
+        }
+      }
+      var maxScrollLeft = hoveredTextarea.scrollLeft - hoveredTextarea.clientWidth;
+      if (maxScrollLeft > 0) {
+        if (!(hoveredTextarea.scrollLeft === 0 && deltaX < 0) &&
+            !(hoveredTextarea.scrollLeft === maxScrollLeft && deltaX > 0)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   function mousewheelHandler(e) {
     // FIXME: this is a quick fix for the select problem in FF and IE.
     // If there comes an effective way to deal with the problem,
@@ -770,6 +794,10 @@ function bindMouseWheelHandler(element, i) {
 
     var deltaX = delta[0];
     var deltaY = delta[1];
+
+    if (shouldBeConsumedByTextarea(deltaX, deltaY)) {
+      return;
+    }
 
     shouldPrevent = false;
     if (!i.settings.useBothWheelAxes) {
@@ -1325,6 +1353,13 @@ module.exports = function (element) {
   i.contentWidth = element.scrollWidth;
   i.contentHeight = element.scrollHeight;
 
+  if (!element.contains(i.scrollbarXRail)) {
+    d.appendTo(i.scrollbarXRail, element);
+  }
+  if (!element.contains(i.scrollbarYRail)) {
+    d.appendTo(i.scrollbarYRail, element);
+  }
+
   if (!i.settings.suppressScrollX && i.containerWidth + i.settings.scrollXMarginOffset < i.contentWidth) {
     i.scrollbarXActive = true;
     i.railXWidth = i.containerWidth - i.railXMarginWidth;
@@ -1369,29 +1404,20 @@ module.exports = function (element) {
 'use strict';
 
 var d = require('../lib/dom')
-  , destroy = require('./destroy')
-  , initialize = require('./initialize')
   , instances = require('./instances')
   , updateGeometry = require('./update-geometry');
 
 module.exports = function (element) {
   var i = instances.get(element);
 
-  if (!i.scrollbarXRail || !element.contains(i.scrollbarXRail) ||
-      !i.scrollbarYRail || !element.contains(i.scrollbarYRail)) {
-    // If there's something wrong in the plugin, re-initialise.
-    destroy(element);
-    initialize(element);
-  } else {
-    // Hide scrollbars not to affect scrollWidth and scrollHeight
-    d.css(i.scrollbarXRail, 'display', 'none');
-    d.css(i.scrollbarYRail, 'display', 'none');
+  // Hide scrollbars not to affect scrollWidth and scrollHeight
+  d.css(i.scrollbarXRail, 'display', 'none');
+  d.css(i.scrollbarYRail, 'display', 'none');
 
-    updateGeometry(element);
+  updateGeometry(element);
 
-    d.css(i.scrollbarXRail, 'display', 'block');
-    d.css(i.scrollbarYRail, 'display', 'block');
-  }
+  d.css(i.scrollbarXRail, 'display', 'block');
+  d.css(i.scrollbarYRail, 'display', 'block');
 };
 
-},{"../lib/dom":3,"./destroy":9,"./initialize":17,"./instances":18,"./update-geometry":19}]},{},[1]);
+},{"../lib/dom":3,"./instances":18,"./update-geometry":19}]},{},[1]);
