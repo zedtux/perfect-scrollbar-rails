@@ -1,4 +1,4 @@
-/* perfect-scrollbar v0.6.2 */
+/* perfect-scrollbar v0.6.3 */
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /* Copyright (c) 2015 Hyunje Alex Jun and other contributors
  * Licensed under the MIT License
@@ -277,11 +277,7 @@ var cls = require('./class')
   , d = require('./dom');
 
 exports.toInt = function (x) {
-  if (typeof x === 'string') {
-    return parseInt(x, 10);
-  } else {
-    return ~~x;
-  }
+  return parseInt(x, 10) || 0;
 };
 
 exports.clone = function (obj) {
@@ -435,8 +431,8 @@ function bindClickRailHandler(element, i) {
   i.event.bind(i.scrollbarY, 'click', stopPropagation);
   i.event.bind(i.scrollbarYRail, 'click', function (e) {
     var halfOfScrollbarLength = h.toInt(i.scrollbarYHeight / 2);
-    var positionTop = e.pageY - pageOffset(i.scrollbarYRail).top - halfOfScrollbarLength;
-    var maxPositionTop = i.containerHeight - i.scrollbarYHeight;
+    var positionTop = i.railYRatio * (e.pageY - window.scrollY - pageOffset(i.scrollbarYRail).top - halfOfScrollbarLength);
+    var maxPositionTop = i.railYRatio * (i.railYHeight - i.scrollbarYHeight);
     var positionRatio = positionTop / maxPositionTop;
 
     if (positionRatio < 0) {
@@ -447,14 +443,15 @@ function bindClickRailHandler(element, i) {
 
     element.scrollTop = (i.contentHeight - i.containerHeight) * positionRatio;
     updateGeometry(element);
+
+    e.stopPropagation();
   });
 
   i.event.bind(i.scrollbarX, 'click', stopPropagation);
   i.event.bind(i.scrollbarXRail, 'click', function (e) {
     var halfOfScrollbarLength = h.toInt(i.scrollbarXWidth / 2);
-    var positionLeft = e.pageX - pageOffset(i.scrollbarXRail).left - halfOfScrollbarLength;
-    console.log(e.pageX, i.scrollbarXRail.offsetLeft);
-    var maxPositionLeft = i.containerWidth - i.scrollbarXWidth;
+    var positionLeft = i.railXRatio * (e.pageX - window.scrollX - pageOffset(i.scrollbarXRail).left - halfOfScrollbarLength);
+    var maxPositionLeft = i.railXRatio * (i.railXWidth - i.scrollbarXWidth);
     var positionRatio = positionLeft / maxPositionLeft;
 
     if (positionRatio < 0) {
@@ -463,8 +460,10 @@ function bindClickRailHandler(element, i) {
       positionRatio = 1;
     }
 
-    element.scrollLeft = (i.contentWidth - i.containerWidth) * positionRatio;
+    element.scrollLeft = ((i.contentWidth - i.containerWidth) * positionRatio) - i.negativeScrollAdjustment;
     updateGeometry(element);
+
+    e.stopPropagation();
   });
 }
 
@@ -489,8 +488,8 @@ function bindMouseScrollXHandler(element, i) {
   var currentPageX = null;
 
   function updateScrollLeft(deltaX) {
-    var newLeft = currentLeft + deltaX;
-    var maxLeft = i.containerWidth - i.scrollbarXWidth;
+    var newLeft = currentLeft + (deltaX * i.railXRatio);
+    var maxLeft = i.scrollbarXRail.getBoundingClientRect().left + (i.railXRatio * (i.railXWidth - i.scrollbarXWidth));
 
     if (newLeft < 0) {
       i.scrollbarXLeft = 0;
@@ -500,7 +499,7 @@ function bindMouseScrollXHandler(element, i) {
       i.scrollbarXLeft = newLeft;
     }
 
-    var scrollLeft = h.toInt(i.scrollbarXLeft * (i.contentWidth - i.containerWidth) / (i.containerWidth - i.scrollbarXWidth));
+    var scrollLeft = h.toInt(i.scrollbarXLeft * (i.contentWidth - i.containerWidth) / (i.containerWidth - (i.railXRatio * i.scrollbarXWidth))) - i.negativeScrollAdjustment;
     element.scrollLeft = scrollLeft;
   }
 
@@ -518,7 +517,7 @@ function bindMouseScrollXHandler(element, i) {
 
   i.event.bind(i.scrollbarX, 'mousedown', function (e) {
     currentPageX = e.pageX;
-    currentLeft = h.toInt(d.css(i.scrollbarX, 'left'));
+    currentLeft = h.toInt(d.css(i.scrollbarX, 'left')) * i.railXRatio;
     h.startScrolling(element, 'x');
 
     i.event.bind(i.ownerDocument, 'mousemove', mouseMoveHandler);
@@ -534,8 +533,8 @@ function bindMouseScrollYHandler(element, i) {
   var currentPageY = null;
 
   function updateScrollTop(deltaY) {
-    var newTop = currentTop + deltaY;
-    var maxTop = i.containerHeight - i.scrollbarYHeight;
+    var newTop = currentTop + (deltaY * i.railYRatio);
+    var maxTop = i.scrollbarYRail.getBoundingClientRect().top + (i.railYRatio * (i.railYHeight - i.scrollbarYHeight));
 
     if (newTop < 0) {
       i.scrollbarYTop = 0;
@@ -545,7 +544,7 @@ function bindMouseScrollYHandler(element, i) {
       i.scrollbarYTop = newTop;
     }
 
-    var scrollTop = h.toInt(i.scrollbarYTop * (i.contentHeight - i.containerHeight) / (i.containerHeight - i.scrollbarYHeight));
+    var scrollTop = h.toInt(i.scrollbarYTop * (i.contentHeight - i.containerHeight) / (i.containerHeight - (i.railYRatio * i.scrollbarYHeight)));
     element.scrollTop = scrollTop;
   }
 
@@ -563,7 +562,7 @@ function bindMouseScrollYHandler(element, i) {
 
   i.event.bind(i.scrollbarY, 'mousedown', function (e) {
     currentPageY = e.pageY;
-    currentTop = h.toInt(d.css(i.scrollbarY, 'top'));
+    currentTop = h.toInt(d.css(i.scrollbarY, 'top')) * i.railYRatio;
     h.startScrolling(element, 'y');
 
     i.event.bind(i.ownerDocument, 'mousemove', mouseMoveHandler);
@@ -1221,6 +1220,15 @@ function Instance(element) {
   i.contentHeight = null;
 
   i.isRtl = d.css(element, 'direction') === "rtl";
+  i.isNegativeScroll = (function () {
+    var originalScrollLeft = element.scrollLeft;
+    var result = null;
+    element.scrollLeft = -1;
+    result = element.scrollLeft < 0;
+    element.scrollLeft = originalScrollLeft;
+    return result;
+  })();
+  i.negativeScrollAdjustment = i.isNegativeScroll ? element.scrollWidth - element.clientWidth : 0;
   i.event = new EventManager();
   i.ownerDocument = element.ownerDocument || document;
 
@@ -1233,8 +1241,12 @@ function Instance(element) {
   i.isScrollbarXUsingBottom = i.scrollbarXBottom === i.scrollbarXBottom; // !isNaN
   i.scrollbarXTop = i.isScrollbarXUsingBottom ? null : h.toInt(d.css(i.scrollbarXRail, 'top'));
   i.railBorderXWidth = h.toInt(d.css(i.scrollbarXRail, 'borderLeftWidth')) + h.toInt(d.css(i.scrollbarXRail, 'borderRightWidth'));
+  // Set rail to display:block to calculate margins
+  d.css(i.scrollbarXRail, 'display', 'block');
   i.railXMarginWidth = h.toInt(d.css(i.scrollbarXRail, 'marginLeft')) + h.toInt(d.css(i.scrollbarXRail, 'marginRight'));
+  d.css(i.scrollbarXRail, 'display', '');
   i.railXWidth = null;
+  i.railXRatio = null;
 
   i.scrollbarYRail = d.appendTo(d.e('div', 'ps-scrollbar-y-rail'), element);
   i.scrollbarY = d.appendTo(d.e('div', 'ps-scrollbar-y'), i.scrollbarYRail);
@@ -1246,8 +1258,11 @@ function Instance(element) {
   i.scrollbarYLeft = i.isScrollbarYUsingRight ? null : h.toInt(d.css(i.scrollbarYRail, 'left'));
   i.scrollbarYOuterWidth = i.isRtl ? h.outerWidth(i.scrollbarY) : null;
   i.railBorderYWidth = h.toInt(d.css(i.scrollbarYRail, 'borderTopWidth')) + h.toInt(d.css(i.scrollbarYRail, 'borderBottomWidth'));
+  d.css(i.scrollbarYRail, 'display', 'block');
   i.railYMarginHeight = h.toInt(d.css(i.scrollbarYRail, 'marginTop')) + h.toInt(d.css(i.scrollbarYRail, 'marginBottom'));
+  d.css(i.scrollbarYRail, 'display', '');
   i.railYHeight = null;
+  i.railYRatio = null;
 }
 
 function getId(element) {
@@ -1314,7 +1329,7 @@ function getThumbSize(i, thumbSize) {
 function updateCss(element, i) {
   var xRailOffset = {width: i.railXWidth};
   if (i.isRtl) {
-    xRailOffset.left = element.scrollLeft + i.containerWidth - i.contentWidth;
+    xRailOffset.left = i.negativeScrollAdjustment + element.scrollLeft + i.containerWidth - i.contentWidth;
   } else {
     xRailOffset.left = element.scrollLeft;
   }
@@ -1328,13 +1343,13 @@ function updateCss(element, i) {
   var yRailOffset = {top: element.scrollTop, height: i.railYHeight};
   if (i.isScrollbarYUsingRight) {
     if (i.isRtl) {
-      yRailOffset.right = i.contentWidth - element.scrollLeft - i.scrollbarYRight - i.scrollbarYOuterWidth;
+      yRailOffset.right = i.contentWidth - (i.negativeScrollAdjustment + element.scrollLeft) - i.scrollbarYRight - i.scrollbarYOuterWidth;
     } else {
       yRailOffset.right = i.scrollbarYRight - element.scrollLeft;
     }
   } else {
     if (i.isRtl) {
-      yRailOffset.left = element.scrollLeft + i.containerWidth * 2 - i.contentWidth - i.scrollbarYLeft - i.scrollbarYOuterWidth;
+      yRailOffset.left = i.negativeScrollAdjustment + element.scrollLeft + i.containerWidth * 2 - i.contentWidth - i.scrollbarYLeft - i.scrollbarYOuterWidth;
     } else {
       yRailOffset.left = i.scrollbarYLeft + element.scrollLeft;
     }
@@ -1363,8 +1378,9 @@ module.exports = function (element) {
   if (!i.settings.suppressScrollX && i.containerWidth + i.settings.scrollXMarginOffset < i.contentWidth) {
     i.scrollbarXActive = true;
     i.railXWidth = i.containerWidth - i.railXMarginWidth;
+    i.railXRatio = i.containerWidth / i.railXWidth;
     i.scrollbarXWidth = getThumbSize(i, h.toInt(i.railXWidth * i.containerWidth / i.contentWidth));
-    i.scrollbarXLeft = h.toInt(element.scrollLeft * (i.railXWidth - i.scrollbarXWidth) / (i.contentWidth - i.containerWidth));
+    i.scrollbarXLeft = h.toInt((i.negativeScrollAdjustment + element.scrollLeft) * (i.railXWidth - i.scrollbarXWidth) / (i.contentWidth - i.containerWidth));
   } else {
     i.scrollbarXActive = false;
     i.scrollbarXWidth = 0;
@@ -1375,6 +1391,7 @@ module.exports = function (element) {
   if (!i.settings.suppressScrollY && i.containerHeight + i.settings.scrollYMarginOffset < i.contentHeight) {
     i.scrollbarYActive = true;
     i.railYHeight = i.containerHeight - i.railYMarginHeight;
+    i.railYRatio = i.containerHeight / i.railYHeight;
     i.scrollbarYHeight = getThumbSize(i, h.toInt(i.railYHeight * i.containerHeight / i.contentHeight));
     i.scrollbarYTop = h.toInt(element.scrollTop * (i.railYHeight - i.scrollbarYHeight) / (i.contentHeight - i.containerHeight));
   } else {
@@ -1404,11 +1421,21 @@ module.exports = function (element) {
 'use strict';
 
 var d = require('../lib/dom')
+  , h = require('../lib/helper')
   , instances = require('./instances')
   , updateGeometry = require('./update-geometry');
 
 module.exports = function (element) {
   var i = instances.get(element);
+
+  // Recalcuate negative scrollLeft adjustment
+  i.negativeScrollAdjustment = i.isNegativeScroll ? element.scrollWidth - element.clientWidth : 0;
+
+  // Recalculate rail margins
+  d.css(i.scrollbarXRail, 'display', 'block');
+  d.css(i.scrollbarYRail, 'display', 'block');
+  i.railXMarginWidth = h.toInt(d.css(i.scrollbarXRail, 'marginLeft')) + h.toInt(d.css(i.scrollbarXRail, 'marginRight'));
+  i.railYMarginHeight = h.toInt(d.css(i.scrollbarYRail, 'marginTop')) + h.toInt(d.css(i.scrollbarYRail, 'marginBottom'));
 
   // Hide scrollbars not to affect scrollWidth and scrollHeight
   d.css(i.scrollbarXRail, 'display', 'none');
@@ -1416,8 +1443,8 @@ module.exports = function (element) {
 
   updateGeometry(element);
 
-  d.css(i.scrollbarXRail, 'display', 'block');
-  d.css(i.scrollbarYRail, 'display', 'block');
+  d.css(i.scrollbarXRail, 'display', '');
+  d.css(i.scrollbarYRail, 'display', '');
 };
 
-},{"../lib/dom":3,"./instances":18,"./update-geometry":19}]},{},[1]);
+},{"../lib/dom":3,"../lib/helper":6,"./instances":18,"./update-geometry":19}]},{},[1]);
