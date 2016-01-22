@@ -1,4 +1,4 @@
-/* perfect-scrollbar v0.6.3 */
+/* perfect-scrollbar v0.6.4 */
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /* Copyright (c) 2015 Hyunje Alex Jun and other contributors
  * Licensed under the MIT License
@@ -386,7 +386,8 @@ module.exports = {
   suppressScrollX: false,
   suppressScrollY: false,
   scrollXMarginOffset: 0,
-  scrollYMarginOffset: 0
+  scrollYMarginOffset: 0,
+  stopPropagationOnClick: true
 };
 
 },{}],9:[function(require,module,exports){
@@ -401,6 +402,10 @@ var d = require('../lib/dom')
 
 module.exports = function (element) {
   var i = instances.get(element);
+
+  if (!i) {
+    return;
+  }
 
   i.event.unbindAll();
   d.remove(i.scrollbarX);
@@ -428,7 +433,9 @@ function bindClickRailHandler(element, i) {
   }
   var stopPropagation = window.Event.prototype.stopPropagation.bind;
 
-  i.event.bind(i.scrollbarY, 'click', stopPropagation);
+  if (i.settings.stopPropagationOnClick) {
+    i.event.bind(i.scrollbarY, 'click', stopPropagation);
+  }
   i.event.bind(i.scrollbarYRail, 'click', function (e) {
     var halfOfScrollbarLength = h.toInt(i.scrollbarYHeight / 2);
     var positionTop = i.railYRatio * (e.pageY - window.scrollY - pageOffset(i.scrollbarYRail).top - halfOfScrollbarLength);
@@ -447,7 +454,9 @@ function bindClickRailHandler(element, i) {
     e.stopPropagation();
   });
 
-  i.event.bind(i.scrollbarX, 'click', stopPropagation);
+  if (i.settings.stopPropagationOnClick) {
+    i.event.bind(i.scrollbarX, 'click', stopPropagation);
+  }
   i.event.bind(i.scrollbarXRail, 'click', function (e) {
     var halfOfScrollbarLength = h.toInt(i.scrollbarXWidth / 2);
     var positionLeft = i.railXRatio * (e.pageX - window.scrollX - pageOffset(i.scrollbarXRail).left - halfOfScrollbarLength);
@@ -1427,6 +1436,10 @@ var d = require('../lib/dom')
 
 module.exports = function (element) {
   var i = instances.get(element);
+
+  if (!i) {
+    return;
+  }
 
   // Recalcuate negative scrollLeft adjustment
   i.negativeScrollAdjustment = i.isNegativeScroll ? element.scrollWidth - element.clientWidth : 0;
