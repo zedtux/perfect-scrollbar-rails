@@ -1,6 +1,6 @@
 # perfect-scrollbar-Rails
 
-This Gem integrates [noraesae](https://github.com/seiyria/perfect-scrollbar)'s [perfect-scrollbar](https://github.com/noraesae/perfect-scrollbar/) to your Rails project.
+This Gem integrates [noraesae](https://github.com/noraesae)'s [perfect-scrollbar](https://github.com/noraesae/perfect-scrollbar/) to your Rails project.
 
 ## Installation
 
