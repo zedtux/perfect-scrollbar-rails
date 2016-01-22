@@ -19,7 +19,6 @@ task :update do
     base_url = 'https://github.com/noraesae/perfect-scrollbar/releases/download'
     final_url = "#{base_url}/#{version}/perfect-scrollbar.zip"
     puts "Downlading perfect-scrollbar #{version} ..."
-    puts "curl -fo #{zip_path} #{final_url}"
     `curl -Lfo #{zip_path} #{final_url}`
   end
 
