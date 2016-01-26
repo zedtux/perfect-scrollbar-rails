@@ -1,7 +1,15 @@
-/* perfect-scrollbar v0.6.9 */
+/* perfect-scrollbar v0.6.10 */
 .ps-container {
   -ms-touch-action: none;
-  overflow: hidden !important; }
+  touch-action: none;
+  overflow: hidden !important;
+  -ms-overflow-style: none; }
+  @supports (-ms-overflow-style: none) {
+    .ps-container {
+      overflow: auto !important; } }
+  @media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
+    .ps-container {
+      overflow: auto !important; } }
   .ps-container.ps-active-x > .ps-scrollbar-x-rail,
   .ps-container.ps-active-y > .ps-scrollbar-y-rail {
     display: block;
