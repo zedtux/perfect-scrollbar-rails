@@ -5,7 +5,7 @@
 
 # ~~~~ Image base ~~~~
 # Base image with the latest Ruby only
-FROM ruby:2.3.0
+FROM ruby:2.3.0-slim
 MAINTAINER Guillaume Hain zedtux@zedroot.org
 
 
