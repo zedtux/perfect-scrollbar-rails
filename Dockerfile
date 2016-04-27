@@ -19,7 +19,7 @@ ADD . /gem/
 # ~~~~ OS Maintenance & Rails Preparation ~~~~
 # Rubygems and Bundler
 RUN apt-get update && \
-  apt-get install -y git build-essential && \
+  apt-get install -y git build-essential unzip && \
   touch ~/.gemrc && \
   echo "gem: --no-ri --no-rdoc" >> ~/.gemrc && \
   gem install rubygems-update && \
