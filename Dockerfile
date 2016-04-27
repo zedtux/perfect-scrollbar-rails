@@ -12,21 +12,23 @@ MAINTAINER Guillaume Hain zedtux@zedroot.org
 # ~~~~ Set up the environment ~~~~
 ENV DEBIAN_FRONTEND noninteractive
 
-# ~~~~ OS Maintenance ~~~~
-RUN apt-get update && apt-get install -y unzip
+RUN mkdir -p /gem/
+WORKDIR /gem/
+ADD . /gem/
 
-# ~~~~ Rails Preparation ~~~~
+# ~~~~ OS Maintenance & Rails Preparation ~~~~
 # Rubygems and Bundler
-RUN touch ~/.gemrc && \
+RUN apt-get update && \
+  apt-get install -y git build-essential && \
+  touch ~/.gemrc && \
   echo "gem: --no-ri --no-rdoc" >> ~/.gemrc && \
   gem install rubygems-update && \
   update_rubygems && \
   gem install bundler && \
-  mkdir -p /gem/
-
-WORKDIR /gem/
-ADD . /gem/
-RUN bundle install
+  bundle install && \
+  apt-get remove --purge -y build-essential && \
+  apt-get autoclean -y && \
+  apt-get clean
 
 # Import the gem source code
 VOLUME .:/gem/
